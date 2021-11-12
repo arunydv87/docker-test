@@ -1,0 +1,45 @@
+pipeline{
+    agent any
+    tools {
+      maven 'maven3'
+    }
+    environment {
+       DOCKER_TAG = getVersion()
+          }
+    
+    stages{
+        stage('SCM'){
+            steps{
+               git credentialsId: 'githubtest',
+                    url: 'https://github.com/arunydv87/docker-test.git'
+            }
+        }
+    
+        stage('Maven Build'){
+            steps{
+                sh "mvn clean package"
+            }
+        }
+        stage('Docker Build'){
+            steps{
+                sh 'docker build . -t arun1165/aruntest:${DOCKER_TAG} '
+            }
+        }
+    
+        stage('DockerHub Push'){
+            steps{
+                withCredentials([string(credentialsId: 'DockerPass', variable: 'TestTest')]) {
+                    sh 'docker login -u arun1165 --password ${TestTest}'
+                }
+
+                sh 'docker push arun1165/aruntest:${DOCKER_TAG} '
+            }
+        }
+
+    }
+    
+}
+def getVersion(){
+    def commitHash = sh returnStdout: true, script: 'git rev-parse --short HEAD'
+    return commitHash
+}
